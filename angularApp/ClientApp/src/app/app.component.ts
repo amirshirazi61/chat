@@ -1,5 +1,5 @@
 import { Component, OnDestroy } from '@angular/core';
-import { Subscriber, Subscription } from 'rxjs/Rx';
+import { Subscriber, Subscription, Observable } from 'rxjs/Rx';
 
 import { ChatService } from './services/bid-service';
 import { Product, Review } from './services/product-service';
@@ -7,19 +7,27 @@ import { Product, Review } from './services/product-service';
 @Component({
     selector: 'my-app',
     template: `<h1>{{name}}</h1>
-             <div *ngIf="isWatching">
-                 <input type='text' [(ngModel)]="messageFromServer" />
-                 <input type='button' (click)="sendMessage()" value="send Message" />
-             </div>
-             <input type='button' (click)="toggleWatchProduct()" [value]="isWatching ? 'Unwatch' : 'Watch'" />
-             <hr />
-             <second-comp></second-comp>`,
+               <label>Deal ID: </label><input type='text' [(ngModel)]="dealId" />
+               <input type='button' (click)="toggleWatchProduct()" [value]="isWatching ? 'Stop Chat' : 'Start Chat'" />
+               <br />
+               <br />
+               <div *ngIf="isWatching">
+                   <input type='text' [(ngModel)]="message" />
+                   <input type='button' (click)="sendMessage()" value="send Message" />
+               </div>
+               <hr />
+               <div *ngIf="messages && messages.length > 0" style="background-color: #E8E8E8; border-radius: 10px; padding: 10px; display: inline-block;">
+                   <p *ngFor="let msg of messages">{{msg}}</p>
+               </div>
+               <second-comp></second-comp>`,
 })
 export class AppComponent implements OnDestroy {
-    product: Product;
+    socket$ = Observable.webSocket('ws://localhost:8085');
     reviews: Review[];
     name = 'First Component';
-    messageFromServer: number = 0;
+    dealId: number = 0;
+    message: string = `Welcome from ${this.name}`;
+    messages: string[];
 
     isWatching: boolean = false;
     private subscription: Subscription;
@@ -31,8 +39,7 @@ export class AppComponent implements OnDestroy {
     }
 
     sendMessage() {
-        console.log("Sending message to WebSocket server.");
-        this.chatService.send({ type: 'onchat', dealId: 0, message: this.messageFromServer.toString() });
+        this.socket$.next(JSON.stringify({ type: 'onchat', dealId: this.dealId, message: this.message.toString() }));
     }
 
     toggleWatchProduct() {
@@ -40,11 +47,18 @@ export class AppComponent implements OnDestroy {
             this.subscription.unsubscribe();
             this.subscription = null;
             this.isWatching = false;
-        } else {
-            this.isWatching = true;
-            this.subscription = this.chatService.watchProduct({ type: 'onopen', message: 0 }).subscribe(messages =>
-                    console.log(messages)
-                , error => console.log(error));
+        }
+        else {   
+            this.socket$.next(JSON.stringify({ type: 'onopen', message: this.dealId }));  
+            this.isWatching = true;       
+            this.subscription = this.socket$.subscribe(
+                (msg: string[]) => {
+                    console.log('message received: ' + msg);
+                    this.messages = msg;
+                },
+                (err) => console.log(err),
+                () => console.log('complete')
+            );
         }
     }
 }

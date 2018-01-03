@@ -34,26 +34,25 @@ function addToClients(client: any, request: any) {
     }
     else if (!dealClients.find(c => c == client)) {
         clients.set(dealId, [...dealClients, client]);
-        console.log(`clients length: ${clients.size}`);
     }
 }
 
 function addToHistory(request: any) {
     let chatHistory = histories.get(request.dealId);
-    if (!chatHistory) {
+    if (!chatHistory)
         histories.set(request.dealId, [request.message]);
-    }
-    else {
-        chatHistory.push(request.message);
-    }
+    else
+        chatHistory.push(request.message);    
 }
 
 function broadCast(request: any) {
-    let dealClients = clients.get(request.dealId);
+    let dealClients = clients.get(parseInt(request.dealId));
     let chatHistoryForDeal: string[] = histories.get(request.dealId);
     dealClients.forEach((client: WebSocket) => {
-        if (client.readyState === 1)
+        if (client.readyState === 1) {
+            console.log(`chatHistoryForDeal : ${JSON.stringify(chatHistoryForDeal)}`);
             client.send(JSON.stringify(chatHistoryForDeal));
+        }
         else 
             dealClients.splice(dealClients.indexOf(client), 1);        
     });

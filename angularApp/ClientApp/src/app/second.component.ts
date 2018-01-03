@@ -1,5 +1,5 @@
-﻿import { Component, OnDestroy} from '@angular/core';
-import { Subscriber, Subscription } from 'rxjs/Rx';
+﻿import { Component, OnDestroy } from '@angular/core';
+import { Subscriber, Subscription, Observable } from 'rxjs/Rx';
 
 import { ChatService } from './services/bid-service';
 import { Product, ProductService, Review } from './services/product-service';
@@ -7,45 +7,58 @@ import { Product, ProductService, Review } from './services/product-service';
 @Component({
     selector: 'second-comp',
     template: `<h1>{{name}}</h1>
-              <div *ngIf="isWatching">
-                <input type='text' [(ngModel)]="messageFromServer" />
-              </div>
-                <input type='button' (click)="toggleWatchProduct()" [value]="isWatching ? 'Unwatch' : 'Watch'" />`,
+               <label>Deal ID: </label><input type='text' [(ngModel)]="dealId" /> 
+               <input type='button' (click)="toggleWatch()" [value]="watching ? 'Stop Chat' : 'Start Chat'" />
+               <br />
+               <br />
+               <div *ngIf="watching">
+                 <input type='text' [(ngModel)]="message" />
+                 <input type='button' (click)="sendMessage2()" value="send Message" />
+               </div>
+            
+             <hr />
+             <div *ngIf="messages && messages.length > 0" style="background-color: #E8E8E8; border-radius: 10px; padding: 10px; display: inline-block;">
+                <p *ngFor="let msg of messages">{{msg}}</p>
+             </div>`,
 })
 export class SecondComponent implements OnDestroy {
-    product: Product;
+    socket$ = Observable.webSocket('ws://localhost:8085');
     reviews: Review[];
-    currentBid: number;
     name = 'Second Component';
-    messageFromServer: number = 0;
+    dealId: number = 0;
+    message: string = `Welcome from ${this.name}`;
+    messages: string[];
 
-    isWatching: boolean = false;
+    watching: boolean = false;
     private subscription: Subscription;
 
-    constructor(private productService: ProductService, private chatService: ChatService) {
-        this.product = new Product(1, 'First Product', 24.99, 4.3,
-            'This is a short description. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-            ['electronics', 'hardware']
-        );
-
-        this.currentBid = this.product.price;
-    }
+    constructor(private productService: ProductService, private chatService: ChatService) { }
 
     ngOnDestroy() {
         this.subscription.unsubscribe();
     }
 
-    toggleWatchProduct() {
+    sendMessage2() {
+        this.socket$.next(JSON.stringify({ type: 'onchat', dealId: this.dealId, message: this.message.toString() }));
+    }
+
+    toggleWatch() {
         if (this.subscription) {
             this.subscription.unsubscribe();
             this.subscription = null;
-            this.isWatching = false;
-        } else {
-            this.isWatching = true;
-            this.subscription = this.chatService.watchProduct({ type: 'onopen', message: 0 })
-                .subscribe(products =>
-                    console.log(products)
-                , error => console.log(error));
+            this.watching = false;
+        }
+        else {
+            this.socket$.next(JSON.stringify({ type: 'onopen', message: this.dealId }));
+            this.watching = true;
+            this.subscription = this.socket$.subscribe(
+                (msg: string[]) => {
+                    console.log('message received: ' + msg);
+                    this.messages = msg;
+                },
+                (err) => console.log(err),
+                () => console.log('complete')
+            );
         }
     }
 }

@@ -141,9 +141,14 @@
     <TypeScriptCompile Include="src\app\services\bid-service.ts" />
     <TypeScriptCompile Include="src\app\services\websocket-service.ts" />
     <TypeScriptCompile Include="src\app\services\product-service.ts" />
+    <TypeScriptCompile Include="src\app\services\WebSocketSubject.ts" />
     <TypeScriptCompile Include="src\main.ts" />
+    <TypeScriptCompile Include="src\util\assign.ts" />
+    <TypeScriptCompile Include="src\util\errorObject.ts" />
+    <TypeScriptCompile Include="src\util\root.ts" />
     <TypeScriptCompile Include="src\server\auctions.ts" />
     <TypeScriptCompile Include="src\server\model.ts" />
+    <TypeScriptCompile Include="src\util\tryCatch.ts" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
