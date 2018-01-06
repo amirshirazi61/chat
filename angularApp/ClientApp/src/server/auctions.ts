@@ -1,7 +1,7 @@
 ﻿import * as express from 'express';
 import * as path from 'path';
 import { Server } from 'ws';
-import { Product, Review, getProducts, getProductById, getReviewsByProductId } from './model';
+import { Message } from './model';
 
 // Using WS API
 var wsServer: Server = new Server({ port: 8085 });
@@ -22,7 +22,7 @@ wsServer.on('connection', ws => {
 });
 
 const clients = new Map<number, any[]>();
-const histories = new Map<number, string[]>();
+const histories = new Map<number, Message[]>();
 
 // Helper functions
 
@@ -39,18 +39,21 @@ function addToClients(client: any, request: any) {
 
 function addToHistory(request: any) {
     let chatHistory = histories.get(request.dealId);
-    if (!chatHistory)
-        histories.set(request.dealId, [request.message]);
-    else
-        chatHistory.push(request.message);    
+
+    if (!chatHistory) {
+        histories.set(request.dealId, [new Message(parseInt(request.userId), request.message)]);
+    }
+    else {
+        chatHistory.push(new Message(parseInt(request.userId), request.message));
+    }
 }
 
 function broadCast(request: any) {
     let dealClients = clients.get(parseInt(request.dealId));
-    let chatHistoryForDeal: string[] = histories.get(request.dealId);
+    let chatHistoryForDeal: Message[] = histories.get(request.dealId);
     dealClients.forEach((client: WebSocket) => {
         if (client.readyState === 1) {
-            console.log(`chatHistoryForDeal : ${JSON.stringify(chatHistoryForDeal)}`);
+                console.log(`val :${JSON.stringify(chatHistoryForDeal)}`);
             client.send(JSON.stringify(chatHistoryForDeal));
         }
         else 

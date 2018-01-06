@@ -1,14 +1,14 @@
 import { Component, OnDestroy } from '@angular/core';
 import { Subscriber, Subscription, Observable } from 'rxjs/Rx';
-
 import { ChatService } from './services/bid-service';
-import { Product, Review } from './services/product-service';
+import { Message } from './../server/model';
 
 @Component({
     selector: 'my-app',
     template: `<h1>{{name}}</h1>
-               <label>Deal ID: </label><input type='text' [(ngModel)]="dealId" />
-               <input type='button' (click)="toggleWatchProduct()" [value]="isWatching ? 'Stop Chat' : 'Start Chat'" />
+               <label>User ID: </label><input type='number' [(ngModel)]="userId" />
+               <label>Deal ID: </label><input type='text' [(ngModel)]="dealId" /> 
+               <input type='button' (click)="toggleWatch()" [value]="isWatching ? 'Stop Chat' : 'Start Chat'" />
                <br />
                <br />
                <div *ngIf="isWatching">
@@ -16,18 +16,26 @@ import { Product, Review } from './services/product-service';
                    <input type='button' (click)="sendMessage()" value="send Message" />
                </div>
                <hr />
-               <div *ngIf="messages && messages.length > 0" style="background-color: #E8E8E8; border-radius: 10px; padding: 10px; display: inline-block;">
-                   <p *ngFor="let msg of messages">{{msg}}</p>
+               <div style='width: 25%; display: inline-block;'>
+                   <div *ngIf="messages && messages.length > 0" style="background-color: #E8E8E8; border-radius: 10px; padding: 10px; display: inline-block;">
+                       <label>Others: </label>
+                       <p *ngFor="let msg of messages">{{msg}}</p>
+                   </div>
+                   <div *ngIf="selfMessages && selfMessages.length > 0" style="background-color: #ccf5ff; border-radius: 10px; padding: 10px; display: inline-block;">
+                       <label>Me: </label>
+                       <p *ngFor="let msg of selfMessages">{{msg}}</p>
+                   </div>
                </div>
                <second-comp></second-comp>`,
 })
 export class AppComponent implements OnDestroy {
     socket$ = Observable.webSocket('ws://localhost:8085');
-    reviews: Review[];
     name = 'First Component';
     dealId: number = 0;
-    message: string = `Welcome from ${this.name}`;
-    messages: string[];
+    userId: number = 1;
+    message: string = `Message from ${this.userId}`;
+    messages: string[] = [];
+    selfMessages: string[] = [];
 
     isWatching: boolean = false;
     private subscription: Subscription;
@@ -39,10 +47,10 @@ export class AppComponent implements OnDestroy {
     }
 
     sendMessage() {
-        this.socket$.next(JSON.stringify({ type: 'onchat', dealId: this.dealId, message: this.message.toString() }));
+        this.socket$.next(JSON.stringify({ type: 'onchat', dealId: this.dealId, message: this.message.toString(), userId: this.userId }));
     }
 
-    toggleWatchProduct() {
+    toggleWatch() {
         if (this.subscription) {
             this.subscription.unsubscribe();
             this.subscription = null;
@@ -52,9 +60,9 @@ export class AppComponent implements OnDestroy {
             this.socket$.next(JSON.stringify({ type: 'onopen', message: this.dealId }));  
             this.isWatching = true;       
             this.subscription = this.socket$.subscribe(
-                (msg: string[]) => {
-                    console.log('message received: ' + msg);
-                    this.messages = msg;
+                (msg: Message[]) => {
+                    let lastMessage: Message = msg[msg.length - 1];
+                    Array.prototype.push.apply((lastMessage.userId == this.userId ? this.selfMessages : this.messages), [lastMessage.message])
                 },
                 (err) => console.log(err),
                 () => console.log('complete')

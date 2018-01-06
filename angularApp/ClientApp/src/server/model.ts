@@ -18,6 +18,13 @@ export class Review {
         public comment: string) { }
 }
 
+export class Message {
+    constructor(
+        public userId: number,
+        public message: string
+    ) { }
+}
+
 export function getProducts(params = <any>{}): Product[] {
     let result = products;
 
