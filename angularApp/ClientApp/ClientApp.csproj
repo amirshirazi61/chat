@@ -146,7 +146,7 @@
     <TypeScriptCompile Include="src\util\assign.ts" />
     <TypeScriptCompile Include="src\util\errorObject.ts" />
     <TypeScriptCompile Include="src\util\root.ts" />
-    <TypeScriptCompile Include="src\server\auctions.ts" />
+    <TypeScriptCompile Include="src\server\ws-server.ts" />
     <TypeScriptCompile Include="src\server\model.ts" />
     <TypeScriptCompile Include="src\util\tryCatch.ts" />
   </ItemGroup>
